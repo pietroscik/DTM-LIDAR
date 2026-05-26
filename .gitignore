@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output e Temp
+output/
+temp/
+logs/
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

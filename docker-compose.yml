@@ -1,0 +1,16 @@
+services:
+  hydro-gis:
+    build: .
+    container_name: hydro_gis_app
+    ports:
+      - "8501:8501"
+    volumes:
+      # Persistenza Output e Temp (mappa le cartelle locali nel container)
+      # Il codice sorgente usato è quello "congelato" nell'immagine Docker
+      - ./output:/app/output
+      - ./temp:/app/temp
+      
+      # Mappa le credenziali GEE dal tuo PC al container (Linux)
+      - ${USERPROFILE}/.config/earthengine:/root/.config/earthengine
+    environment:
+      - PYTHONUNBUFFERED=1

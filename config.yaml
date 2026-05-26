@@ -1,0 +1,66 @@
+# Configurazione Hydro-GIS
+
+project:
+  name: "Hydro-GIS Digital Twin"
+  version: "1.0.0"
+
+# Backend per il calcolo dell'accumulo di flusso
+# Opzioni: "auto", "pysheds", "whitebox", "placeholder"
+flow_accumulation_backend: "auto"
+
+# Pesi per il modello di rischio combinato (somma deve fare ~1.0)
+risk_weights:
+  twi: 0.4      # Topographic Wetness Index (accumulo statico)
+  spi: 0.3      # Stream Power Index (potere erosivo)
+  runoff: 0.2   # Coefficiente di deflusso (impermeabilità)
+  slope: 0.1    # Pendenza (velocità)
+
+# Soglie per la classificazione del rischio (0-1)
+risk_thresholds:
+  low: 0.35
+  high: 0.65
+
+# Post-processing per la mappa ottimizzata
+spi_postprocessing:
+  percentile: 95        # Percentile per identificare aree ad alto SPI
+  buffer_meters: 20     # Buffer di sicurezza attorno ai flussi
+  median_filter_size: 3 # Dimensione kernel per pulizia rumore
+
+# Dataset GEE
+gee_dem_dataset_id: "USGS/SRTMGL1_003"
+gee_landcover_collection: "ESA/WorldCover/v100"
+gee_chirps_collection: "UCSB-CHG/CHIRPS/DAILY"
+
+# Impostazioni WMS (LiDAR Campania)
+lidar_wms_url: "http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/servizi-LiDAR/LIDAR_CAMPANIA.map"
+lidar_wms_layer: "EL.LIDAR.CAMPANIA.1x1.DTM"
+
+# Mappatura Land Cover (ESA WorldCover) -> Coefficiente di Deflusso
+# 10: Trees, 20: Shrubland, 30: Grassland, 40: Cropland, 50: Built-up, 
+# 60: Barren, 80: Water, 90: Wetland
+landcover_runoff_mapping:
+  10: 0.15   # Trees - Foresta (alta infiltrazione)
+  20: 0.20   # Shrubland - Arbustiva
+  30: 0.25   # Grassland - Prateria
+  40: 0.35   # Cropland - Agricolo (variabile per coltura)
+  50: 0.70   # Built-up - Urbano (alta impermeabilità)
+  60: 0.40   # Barren - Nudo/Roccioso
+  70: 0.30   # Snow/Ice - Neve/Ghiaccio (stagionale)
+  80: 0.00   # Water - Acqua (non genera runoff superficiale)
+  90: 0.10   # Wetland - Zona Umida (alta ritenzione)
+  95: 0.25   # Mangroves - Mangrovie
+  100: 0.20  # Moss/Lichen - Muschi/Licheni
+
+# Valore default per classi non mappate
+landcover_default_coeff: 0.30
+
+# Visualizzazione Mappe (Streamlit)
+visualization:
+  colormaps:
+    dem: "viridis"      # Più accessibile di 'terrain'
+    risk: "plasma"      # Percettivamente uniforme (Low=Blue, High=Yellow)
+    risk_optimized: "OrRd"
+  opacity:
+    dem: 0.6
+    risk: 0.7
+    risk_optimized: 0.5
