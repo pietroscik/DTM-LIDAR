@@ -1,5 +1,7 @@
 # DTM LIDAR Flood Risk Assessment
 
+> 🚧 **Stato**: Work in Progress — pipeline geospaziale (Docker, Google Earth Engine, analisi flood risk), raffinamento in corso.
+
 Pipeline configurabile per la valutazione del rischio idrogeologico a partire da DEM (SRTM / LiDAR / LiDAR via WMS), copertura del suolo, pioggia (CHIRPS o raster locale) e dati OSM (fiumi + edifici).
 
 Il progetto è pensato come prototipo avanzato ma coerente: tutta la logica è nei moduli `core/`, mentre gli script principali orchestrano scenari diversi (locale vs GEE, SRTM vs LiDAR).
@@ -31,7 +33,8 @@ Il progetto è pensato come prototipo avanzato ma coerente: tutta la logica è n
   - `postprocessing.py` – Post‑processing SPI → `Risk_Map_Optimized.tif` + overlay PNG.
   - `risk_model.py` – Modello di rischio combinato, parametri da `config.yaml`.
   - `reporting.py` – Report Markdown con statistiche sintetiche.
-  - `logging_config.py` / `crs_validation.py` / `utils.py` – Logging, validazione CRS e utility I/O centralizzate.
+  - `logging_config.py` / `crs_validation.py` / `utils.py` – Logging, valida
+zione CRS e utility I/O centralizzate.
 
 - `config.yaml`  
   Configurazione centrale (dataset GEE, backend flow accumulation, pesi rischio, WMS LiDAR, ecc.).
@@ -81,7 +84,8 @@ Parametri principali (già impostati per Campania):
     - In pratica: `whitebox` è quello che stai usando ora.
 
 - **Modello di rischio**
-  - `risk_weights` – Pesi per TWI, SPI, runoff, slope nel rischio combinato.
+  - `risk_weights` – Pes
+i per TWI, SPI, runoff, slope nel rischio combinato.
   - `risk_thresholds` – Soglie per classi di rischio (basso/medio/alto).
 
 - **Post‑processing SPI**
@@ -135,7 +139,8 @@ Il progetto include un `Dockerfile` e `docker-compose.yml` per un setup immediat
 
 Questo script è ottimizzato per lo screening rapido su diverse fonti dati (SRTM, LiDAR WMS). Usa parametri semplificati (pioggia/deflusso costanti) per fornire un risultato immediato.
 
-**Esempio A – Analisi completa SRTM + CHIRPS + OSM (Avella)**
+**Esempio A – Analisi completa SRTM + 
+CHIRPS + OSM (Avella)**
 
 ```bash
 python flood_risk_prototype.py \
@@ -204,7 +209,8 @@ Esempio:
 python SRTM/flood_risk_prototype.py \
   --coords "14.593131, 40.968531" \
   --buffer-km 5 \
-  --out-dir output/avella_srtm_screening \
+  --out-dir output/avella_srtm_sc
+reening \
   --enable-osm-exposure
 ```
 
@@ -270,7 +276,8 @@ m.save("avella_simple_map.html")
 ## 6. Allineamento e buone pratiche
 
 - Usa `flood_risk_prototype.py` come entry‑point principale per nuovi scenari: è quello più aggiornato e configurato.
-- Tieni `config.yaml` come unica fonte di verità per:
+- Tieni `config.yaml` come unica fonte di verità pe
+r:
   - dataset GEE,
   - backend flow accumulation,
   - pesi/soglie del modello di rischio,
