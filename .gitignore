@@ -18,6 +18,7 @@ node_modules/
 
 # Logs and temp files
 *.log
+temp/
 *.tmp
 *.swp
 *.swo
@@ -64,3 +65,5 @@ Thumbs.db
 *.tar.xz
 *.tar.zst
 ```
+*.tmp.driveupload
+settings.json

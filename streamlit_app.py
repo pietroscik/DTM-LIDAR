@@ -104,16 +104,23 @@ def plot_3d_terrain(dem_path, risk_path, vert_exag=1.5, colorscale='RdYlGn_r'):
 
     try:
         with rasterio.open(dem_path) as src:
-            dem = src.read(1)
-            # Sostituisci nodata con NaN per plotly
-            nodata = src.nodata if src.nodata is not None else -9999
-            dem = np.where(dem == nodata, np.nan, dem)
-            # Maschera valori assurdi (es. -32768)
-            dem = np.where(dem < -1000, np.nan, dem)
+            dem = src.read(1).astype('float32')
+            bounds = src.bounds
+            
+            # 1. Maschera il NoData ufficiale (usando isclose per precisione float)
+            if src.nodata is not None:
+                dem = np.where(np.isclose(dem, src.nodata), np.nan, dem)
+            
+            # 2. Maschera valori fittizi comuni (le cause di stalattiti e stalagmiti)
+            dem = np.where(np.isclose(dem, -9999) | np.isclose(dem, 9999) | np.isclose(dem, -32768), np.nan, dem)
+            
+            # 3. Maschera valori fisicamente assurdi (es. < -100m o > 4000m)
+            dem = np.where((dem < -100) | (dem > 4000), np.nan, dem)
             
         with rasterio.open(risk_path) as src:
-            risk = src.read(1)
-            risk = np.where(risk == src.nodata, np.nan, risk)
+            risk = src.read(1).astype('float32')
+            if src.nodata is not None:
+                risk = np.where(np.isclose(risk, src.nodata), np.nan, risk)
 
         # --- FIX 1: Downsampling Dinamico per Mesh Uniforme ---
         # Calcola fattore per avere circa 150k punti (ottimo compromesso qualità/performance)
@@ -130,22 +137,33 @@ def plot_3d_terrain(dem_path, risk_path, vert_exag=1.5, colorscale='RdYlGn_r'):
         z_data = np.flipud(dem[::downsample_factor, ::downsample_factor])
         surface_color = np.flipud(risk[::downsample_factor, ::downsample_factor])
 
-        # --- FIX 2: Conversione Unità (Metri -> Gradi approssimati) ---
-        # Risolve il problema dei "picchi ad ago" causati dal mix LatLon/Metri.
-        # 1 grado lat ~= 111 km.
-        scale_factor = 1 / 111111.0
-        z_data_deg = z_data * scale_factor * vert_exag
+        # --- FIX 2: Allineamento Unità (Metri reali) ---
+        # Calcoliamo l'estensione reale in metri dell'area per gli assi X e Y
+        lat_span_deg = bounds.top - bounds.bottom
+        lon_span_deg = bounds.right - bounds.left
+        
+        # 1 grado lat = ~111.1 km
+        y_span_m = lat_span_deg * 111111.0
+        x_span_m = lon_span_deg * 111111.0 * np.cos(np.deg2rad(bounds.bottom))
+        
+        x_axis = np.linspace(0, x_span_m, z_data.shape[1])
+        y_axis = np.linspace(0, y_span_m, z_data.shape[0])
+        
+        # Z è già in metri, applichiamo solo l'esagerazione verticale
+        z_data_m = z_data * vert_exag
 
-        fig = go.Figure(data=[go.Surface(z=z_data_deg, surfacecolor=surface_color, colorscale=colorscale, cmin=0, cmax=1)])
+        fig = go.Figure(data=[go.Surface(
+            x=x_axis, y=y_axis, z=z_data_m, 
+            surfacecolor=surface_color, colorscale=colorscale, cmin=0, cmax=1
+        )])
         
         fig.update_layout(
             title='Digital Twin 3D (Elevazione + Rischio)',
             scene=dict(
-                aspectmode='data', # Ora che Z è in gradi, 'data' mantiene le proporzioni corrette
-                xaxis_title="Lon",
-                yaxis_title="Lat",
-                zaxis_title="Elevazione (Scaled)",
-                zaxis=dict(showticklabels=False) # Nascondi i tick perché sono in gradi
+                aspectmode='data', # Mantiene le proporzioni fisiche reali
+                xaxis_title="Distanza X (m)",
+                yaxis_title="Distanza Y (m)",
+                zaxis_title="Elevazione (m)",
             ),
             autosize=True, margin=dict(l=0, r=0, b=0, t=30)
         )
@@ -668,7 +686,8 @@ if st.session_state.results:
         st.markdown("Visualizzazione tridimensionale del terreno. Il colore indica l'indice di rischio (Verde=Basso, Rosso=Alto).")
         vert_exag = st.slider("Esagerazione Verticale", 0.1, 5.0, 1.5, 0.1)
         with st.spinner("Generazione modello 3D..."):
-            fig_3d = plot_3d_terrain(res["dem_cond"], res["risk_index"], vert_exag, colorscale=colormaps.get("risk", "RdYlGn_r"))
+            # Passiamo dem_raw invece di dem_cond per evitare che gli algoritmi idrologici (es. fill_sinks) alterino i rilievi
+            fig_3d = plot_3d_terrain(res["dem_raw"], res["risk_index"], vert_exag, colorscale=colormaps.get("risk", "RdYlGn_r"))
             if fig_3d:
                 st.plotly_chart(fig_3d, use_container_width=True)
 
